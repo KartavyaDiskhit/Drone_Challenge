@@ -1,0 +1,493 @@
+# importing necessary packages
+from matplotlib import pyplot as plt
+import numpy as np
+import cv2
+
+# implementing our OpenCV image loading script
+args = { 'image': '/kaggle/input/images/images/mukeshbg1.png'}
+args
+
+# load input image and convert it to grayscale
+image = cv2.imread(args["image"])
+image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+def plt_imshow(title, image):
+    # converting image frame BGR to RGB color space and display it
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    plt.imshow(image)
+    plt.title(title)
+    plt.grid(False)
+    plt.show()
+
+# compute a grayscale histogram
+hist = cv2.calcHist([image], [0], None, [256], [0, 256])
+
+# matplotlib expects RGB images so convert and then display image with matplotlib
+plt.figure()
+plt.axis("off")
+plt.imshow(cv2.cvtColor(image, cv2.COLOR_GRAY2RGB))
+
+# plot  histogram
+plt.figure()
+plt.title("Grayscale Image Histogram")
+plt.xlabel("Bins")
+plt.ylabel("% of pixels falling into given bins")
+plt.plot(hist)
+plt.xlim([0, 256])
+plt.show()
+
+# normalize histogram
+hist /= hist.sum()
+
+# plot normalized histogram
+plt.figure()
+plt.title("Grayscale Histogram (Normalized)")
+plt.xlabel("Bins")
+plt.ylabel("% of pixels falling into given bins")
+plt.plot(hist)
+plt.xlim([0, 256])
+plt.show()
+
+# load the input image from disk
+image = cv2.imread(args["image"])
+
+# split image into its respective channels, then initialize tuple of channel names along with our figure for plotting
+chans = cv2.split(image)
+colors = ("b", "g", "r")
+plt.figure(figsize=(15,4))
+plt.title("'Flattened' Color Histogram")
+plt.xlabel("Bins")
+plt.ylabel("# of Pixels")
+
+# loop over the image channels
+for (chan,color) in zip(chans, colors):
+    # create a histogram for current channel and plot it
+    hist = cv2.calcHist([chan], [0], None, [256], [0, 256])
+    plt.plot(hist, color=color)
+    plt.xlim([0, 256])
+
+# create a new figure and then plot a 2D color histogram for green and blue channels
+fig = plt.figure(figsize=(28,5))
+ax = fig.add_subplot(131)
+hist = cv2.calcHist([chans[1], chans[0]], [0, 1], None, [32, 32],[0, 256, 0, 256])
+p = ax.imshow(hist, interpolation="nearest")
+ax.set_title("2D Color Histogram for G and B")
+plt.colorbar(p)
+plt.show()
+
+# plot a 2D color histogram for green and red channels
+fig = plt.figure(figsize=(28,5))
+ax = fig.add_subplot(132)
+hist = cv2.calcHist([chans[1], chans[2]], [0, 1], None, [32, 32],[0, 256, 0, 256])
+p = ax.imshow(hist, interpolation="nearest")
+ax.set_title("2D Color Histogram for G and R")
+plt.colorbar(p)
+plt.show()
+
+# plot a 2D color histogram for blue and red channels
+fig = plt.figure(figsize=(28,5))
+ax = fig.add_subplot(133)
+hist = cv2.calcHist([chans[0], chans[2]],[0, 1], None, [32, 32],[0, 256, 0, 256])
+p = ax.imshow(hist, interpolation="nearest")
+ax.set_title("2D Color Histogram for B and R")
+plt.colorbar(p)
+plt.show()
+
+#examine dimensionality of one of 2D histograms
+print("2D histogram shape: {}, with {} values".format(hist.shape, hist.flatten().shape[0]))
+
+# our 2D histogram could only take into account 2 out of 3 channels in image so now let's build a 3D color histogram
+# (utilizing all channels) with 8 bins in each direction ==> we can't plot 3D histogram, but theory is exactly like that of a 
+# 2D histogram, so we'll just show shape of histogram
+
+hist = cv2.calcHist([image], [0, 1, 2],None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+
+print("3D histogram shape: {}, with {} values".format(hist.shape, hist.flatten().shape[0]))
+
+!pip install imutils
+
+import imutils
+
+# display original input image
+plt.figure(figsize=(28,5))
+plt.axis("off")
+plt.imshow(imutils.opencv2matplotlib(image))
+
+# show our plots
+plt.show()
+
+def plot_histogram(image, title, mask=None):
+    # split image into its respective channels, then initialize tuple of channel names along with our figure for plotting
+    
+    chans = cv2.split(image)
+    colors = ("b", "g", "r")
+    plt.figure(figsize=(28,5))
+    plt.title(title)
+    plt.xlabel("Bins")
+    plt.ylabel("# of Pixels")
+
+    # loop over image channels
+    for (chan, color) in zip(chans, colors):
+        # create a histogram for current channel and plot it
+        hist = cv2.calcHist([chan], [0], mask, [256], [0, 256])
+        plt.plot(hist, color=color)
+        plt.xlim([0, 256])
+
+    plt.show()
+
+# load the input image from disk
+image = cv2.imread(args["image"])
+
+plot_histogram(image, "Histogram for Original Image")
+plt.figure(figsize=(28,5))
+plt.axis("off")
+plt_imshow("Original Image", image)
+
+# construct a mask for our image; 
+# our mask will be *black* for regions we want to *ignore* and *white* for regions we want to *examine*
+
+mask = np.zeros(image.shape[:2], dtype="uint8")
+cv2.rectangle(mask, (60, 290), (210, 390), 255, -1)
+plt.figure(figsize=(28,5))
+plt_imshow("Mask", mask)
+
+# display masked region
+masked = cv2.bitwise_and(image, image, mask=mask)
+plt.figure(figsize=(28,5))
+plt_imshow("Applying the Mask", masked)
+
+# compute a histogram for our image, but we'll only include pixels in masked region
+plot_histogram(image, "Histogram for Masked Image", mask=mask)
+
+# show our plots
+plt.show()
+
+# load input image from disk and convert it to grayscale
+print("[INFO] loaded input image...")
+image = cv2.imread(args["image"])
+gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+
+# apply histogram equalization
+print("[INFO] performed histogram equalization...")
+equalized = cv2.equalizeHist(gray)
+
+# show original grayscale image and equalized image
+plt_imshow("Input", gray)
+plt_imshow("Histogram Equalization", equalized)
+
+args = {'image': '/kaggle/input/images/images/mukeshbg1.png','clip': 2.0,'tile': 8}
+
+# load input image from disk and convert it to grayscale
+print("[INFO] loaded input image...")
+image = cv2.imread(args["image"])
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+print("[INFO] applying CLAHE...")
+clahe = cv2.createCLAHE(clipLimit=args["clip"],tileGridSize=(args["tile"], args["tile"]))
+equalized = clahe.apply(gray)
+
+# show original grayscale image and CLAHE output image
+plt_imshow("Input", gray)
+plt_imshow("CLAHE", equalized)
+
+args = {
+    "source": "../input/images/images/mukesh.jpg", 
+    "reference": "../input/images/images/mukeshbg1.png"}
+
+# load source and reference images
+print("[INFO] loaded source and reference images...")
+src = cv2.imread(args["source"])
+ref = cv2.imread(args["reference"])
+
+# using scikit-image’s exposure library to compute image histograms, 
+# cumulative distribution functions, and apply histogram matching
+
+from skimage import exposure
+
+# determine if we are performing multichannel histogram matching and then perform histogram matching itself
+print("[INFO] performing histogram matching...")
+multi = True if src.shape[-1] > 1 else False
+matched = exposure.match_histograms(src, ref, multichannel=multi)
+
+# show output images
+plt_imshow("Source", src)
+plt_imshow("Reference", ref)
+plt_imshow("Matched", matched)
+
+# construct a figure to display histogram plots for each channel before and after histogram matching was applied
+(fig, axs) =  plt.subplots(nrows=3, ncols=3, figsize=(20,8))
+
+# loop over our source image, reference image, and output matched image
+for (i, image) in enumerate((src, ref, matched)):
+    # convert image from BGR to RGB channel ordering
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # loop over names of the channels in RGB order
+    for (j, color) in enumerate(("red", "green", "blue")):
+    # compute a histogram for the current channel and plot it
+        (hist, bins) = exposure.histogram(image[..., j],source_range="dtype")
+        axs[j, i].plot(bins, hist / hist.max())
+
+    # compute cumulative distribution function for current channel and plot it
+        (cdf, bins) = exposure.cumulative_distribution(image[..., j])
+        axs[j, i].plot(bins, cdf)
+
+    # set y-axis label of the current plot to be name of current color channel
+        axs[j, 0].set_ylabel(color)
+
+## set axes titles
+axs[0, 0].set_title("Source")
+axs[0, 1].set_title("Reference")
+axs[0, 2].set_title("Matched")
+plt.show()
+
+def adjust_gamma(image, gamma=1.0):
+    # build a lookup table mapping pixel values [0, 255] to their adjusted gamma values
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+        for i in np.arange(0, 256)]).astype("uint8")
+    # apply gamma correction using lookup table
+    return cv2.LUT(image, table)
+
+args = {'image': '/kaggle/input/images/images/mukeshbg1.png'}
+
+# load the original image
+original = cv2.imread(args["image"])
+
+# loop over various values of gamma
+for gamma in np.arange(0.0, 3.5, 0.5):
+     # ignore when gamma is 1 (there will be no change to the image)
+    if gamma == 1:
+        continue
+
+    # apply gamma correction and show the images
+    gamma = gamma if gamma > 0 else 0.1
+    adjusted = adjust_gamma(original, gamma=gamma)
+    cv2.putText(adjusted, "g={}".format(gamma), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
+    plt_imshow("Images", np.hstack([original, adjusted]))
+
+from skimage import exposure
+
+def find_color_card(image):
+    # load ArUCo dictionary, grab ArUCo parameters and detect the markers in input image
+    arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_ARUCO_ORIGINAL)
+    arucoParams = cv2.aruco.DetectorParameters_create()
+    (corners, ids, rejected) = cv2.aruco.detectMarkers(image,arucoDict, parameters=arucoParams)
+
+    # try to extract the coordinates of the color correction card
+    try:
+        # otherwise, we've found four ArUco markers so we can continue by flattening ArUco IDs list
+        ids = ids.flatten()
+        # extract top-left marker
+        i = np.squeeze(np.where(ids == 923))
+        topLeft = np.squeeze(corners[i])[0]
+
+        # extract top-right marker
+        i = np.squeeze(np.where(ids == 1001))
+        topRight = np.squeeze(corners[i])[1]
+
+        # extract bottom-right marker
+        i = np.squeeze(np.where(ids == 241))
+        bottomRight = np.squeeze(corners[i])[2]
+
+        # extract bottom-left marker
+        i = np.squeeze(np.where(ids == 1007))
+        bottomLeft = np.squeeze(corners[i])[3]
+
+    # we could not find color correction card, so gracefully return
+    except:
+        return None
+
+    # build our list of reference points and apply a perspective transform to obtain a top-down, birds-eye-view of the color matching card
+    cardCoords = np.array([topLeft, topRight,bottomRight, bottomLeft])
+    card = four_point_transform(image, cardCoords)
+
+    # return color matching card to calling function
+    return card
+
+# parsing code with *hard coded* arguments and values
+args = {
+    "reference": "../input/images/images/mukesh1.jpg",
+    "input": "../input/images/images/mukeshbg1.png"}
+
+    # load reference image and input images from disk
+print("[INFO] loading images...")
+ref = cv2.imread(args["reference"])
+image = cv2.imread(args["input"])
+
+# resize reference and input images
+ref = imutils.resize(ref, width=600)
+image = imutils.resize(image, width=600)
+
+# display reference and input images to our screen
+plt_imshow("Reference", ref)
+plt_imshow("Input", image)
+
+from imutils.perspective import four_point_transform
+from skimage import exposure
+
+# find color matching card in each image
+print("[INFO] finding color matching cards...")
+refCard = find_color_card(ref)
+imageCard = find_color_card(image)
+
+# if color matching card is not found in either reference image or input image, gracefully exit
+if refCard is None or imageCard is None:
+    print("[INFO] could not find color matching card in both images")
+
+# show color matching card in reference image and input image respectively
+plt_imshow("Reference Color Card", refCard)
+plt_imshow("Input Color Card", imageCard)
+
+# apply histogram matching from color matching card in reference image to the color matching card in input image
+print("[INFO] matching images...")
+imageCard = exposure.match_histograms(imageCard, refCard,multichannel=True)
+
+# show our input color matching card after histogram matching
+plt_imshow("Input Color Card After Matching", imageCard)
+
+args = {
+    "input": "../input/images/images/mukeshbg1.png",
+    "thresh": 0.35}
+
+from skimage.exposure import is_low_contrast
+from imutils.paths import list_images
+
+# grab the paths to the input images
+imagePaths = sorted(list(list_images(args["input"])))
+
+# loop over the image paths
+for (i, imagePath) in enumerate(imagePaths):
+    # load the input image from disk, resize it, and convert it to
+    # grayscale
+    print("[INFO] processing image {}/{}".format(i + 1,
+        len(imagePaths)))
+    image = cv2.imread(imagePath)
+    image = imutils.resize(image, width=450)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # blur the image slightly and perform edge detection
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edged = cv2.Canny(blurred, 30, 150)
+
+    # initialize the text and color to indicate that the input image
+    # is *not* low contrast
+    text = "Low contrast: No"
+    color = (0, 255, 0)
+
+    # check to see if the image is low contrast
+    if is_low_contrast(gray, fraction_threshold=args["thresh"]):
+        # update the text and color
+        text = "Low contrast: Yes"
+        color = (0, 0, 255)
+
+    # otherwise, the image is *not* low contrast, so we can continue
+    # processing it
+    else:
+        # find contours in the edge map and find the largest one, which we'll assume is the outline of our color correction card
+        cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        c = max(cnts, key=cv2.contourArea)
+
+        # draw the largest contour on the image
+        cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
+
+    # draw the text on the output image
+    cv2.putText(image, text, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8,color, 2)
+
+    # show the output image and edge map
+    plt_imshow("Image", image)
+    plt_imshow("Edge", edged)
+
+# parsing code with *hard coded* arguments and values
+args = {
+    "input": "example_video.mp4",
+    "thresh": 0.35,
+    "output": "output.avi"
+}
+
+# grab a pointer to the input video stream and and initialize pointer 
+# to output file
+print("[INFO] accessing video stream...")
+vs = cv2.VideoCapture(args["input"] if args["input"] else 0)
+writer = None
+
+# loop over frames from the video stream
+while True:
+    # read a frame from the video stream
+    (grabbed, frame) = vs.read()
+
+    # if the frame was not grabbed then we've reached the end of
+    # the video stream so exit the script
+    if not grabbed:
+        print("[INFO] no frame read from stream - exiting")
+        break
+
+    # resize the frame, convert it to grayscale, blur it, and then
+    # perform edge detection
+    frame = imutils.resize(frame, width=450)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edged = cv2.Canny(blurred, 30, 150)
+
+    # initialize the text and color to indicate that the current
+    # frame is *not* low contrast
+    text = "Low contrast: No"
+    color = (0, 255, 0)
+
+    # check to see if the frame is low contrast, and if so, update
+    # the text and color
+    if is_low_contrast(gray, fraction_threshold=args["thresh"]):
+        text = "Low contrast: Yes"
+        color = (0, 0, 255)
+
+    # otherwise, the frame is *not* low contrast, so we can continue
+    # processing it
+    else:
+    # find contours in the edge map and find the largest one, which we'll assume is the outline of our color correction card
+        cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        c = max(cnts, key=cv2.contourArea)
+
+        # draw the largest contour on the frame
+        cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)
+
+    # draw text on output frame
+    cv2.putText(frame, text, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8,color, 2)
+
+    # stack output frame and edge map next to each other
+    output = np.dstack([edged] * 3)
+    output = np.hstack([frame, output])
+
+    # if video writer is None *AND* we are supposed to write output video to disk initialize the writer
+    if writer is None and args["output"] is not None:
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        writer = cv2.VideoWriter(args["output"], fourcc, 20,(output.shape[1], output.shape[0]), True)
+
+    # if the writer is not None, write the frame to disk
+    if writer is not None:
+        writer.write(output)
+
+# do a bit of cleanup
+vs.release()
+vs.release()
+
+# check to see if the video writer point needs to be released
+if writer is not None:
+    writer.release()
+
+!ffmpeg -i "output.avi" output.mp4
+
+#@title Display video inline
+from IPython.display import HTML
+from base64 import b64encode
+
+mp4 = open("output.mp4", "rb").read()
+dataURL = "data:video/mp4;base64," + b64encode(mp4).decode()
+HTML("""
+<video width=700 controls>
+      <source src="%s" type="video/mp4">
+</video>
+""" % dataURL)
+
